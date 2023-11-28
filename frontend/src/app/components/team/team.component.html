@@ -1,0 +1,81 @@
+<!-- Team Start -->
+<div class="container-fluid py-5">
+  <div class="container">
+    <div
+      class="border-start border-5 border-primary ps-5 mb-5"
+      style="max-width: 600px"
+    >
+      <h6 class="text-primary text-uppercase">Team Members</h6>
+      <h1 class="display-5 text-uppercase mb-0">Meet our team!</h1>
+    </div>
+
+    <owl-carousel-o
+      *ngIf="customOptions"
+      [options]="customOptions"
+      #owlCar
+      style="padding-right: 25px"
+      class="team-carousel"
+    >
+      <ng-container *ngFor="let slide of dynamicSlides">
+        <ng-template carouselSlide [id]="slide.id.toString()">
+          <div class="team-item">
+            <div class="position-relative overflow-hidden">
+              <img class="img-fluid w-100" [src]="slide.src" alt="" />
+              <div class="team-overlay">
+                <div class="d-flex align-items-center justify-content-start">
+                  <a class="btn btn-light btn-square mx-1" [href]="slide.git"
+                    ><i class="bi bi-github"></i
+                  ></a>
+                  <a class="btn btn-light btn-square mx-1" href="#"
+                    ><i class="bi bi-facebook"></i
+                  ></a>
+                  <a
+                    class="btn btn-light btn-square mx-1"
+                    href="https://www.linkedin.com/in/dragos-polifronie-b7b725200/"
+                    target="_blank"
+                    ><i class="bi bi-linkedin"></i
+                  ></a>
+                </div>
+              </div>
+            </div>
+            <div class="bg-light text-center p-4">
+              <h5 class="text-uppercase">{{ slide.name }}</h5>
+              <p class="m-0">{{ slide.role }}</p>
+            </div>
+          </div>
+        </ng-template>
+      </ng-container>
+    </owl-carousel-o>
+  </div>
+</div>
+
+<!--  <div class="team-item">
+        <div class="position-relative overflow-hidden">
+          <img
+            class="img-fluid w-100"
+            src="../../../assets/img/toteu.jpg"
+            alt=""
+          />
+          <div class="team-overlay">
+            <div class="d-flex align-items-center justify-content-start">
+              <a class="btn btn-light btn-square mx-1" href="#"
+                ><i class="bi bi-twitter"></i
+              ></a>
+              <a class="btn btn-light btn-square mx-1" href="#"
+                ><i class="bi bi-facebook"></i
+              ></a>
+              <a class="btn btn-light btn-square mx-1" href="#"
+                ><i class="bi bi-linkedin"></i
+              ></a>
+            </div>
+          </div>
+        </div>
+        <div class="bg-light text-center p-4">
+          <h5 class="text-uppercase">Full Name</h5>
+          <p class="m-0">Designation</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>-->
+<!-- Team End -->

@@ -1,0 +1,27 @@
+<div class="container-lg mt-5">
+  <div *ngIf="this.userProfile">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title">Hello, {{ this.userProfile.email }}</h5>
+      </div>
+      <div class="card-body">
+        <p>How can we help you today?</p>
+        <small class="mb-2"> account details: </small>
+        <p>email: {{ this.userProfile.email }}</p>
+        <p>customer id: {{ this.userProfile.uid }}</p>
+        <p>your current role: {{ this.userProfile.role }}</p>
+      </div>
+
+      <div class="card-footer d-flex">
+        <button type="button" class="btn btn-dark" (click)="logout()">
+          Log out
+        </button>
+        <div *ngIf="this.userProfile.role === 'admin'">
+          <button type="button" class="btn btn-secondary">
+            <a routerLink="/admin" style="color: black">Admin page </a>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

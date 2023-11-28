@@ -1,0 +1,30 @@
+google-map {
+  width: 800px !important;
+  height: 500px !important;
+}
+
+.my-google-map {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 95%;
+  padding: 1rem;
+  padding-left: 0;
+}
+
+.map-flex {
+  align-items: center;
+}
+
+@media (min-width: 992px) {
+  .map-flex {
+    justify-content: space-around;
+  }
+  .my-google-map {
+    width: 50%;
+  }
+}
+
+::ng-deep .map-container {
+  height: 100% !important;
+}

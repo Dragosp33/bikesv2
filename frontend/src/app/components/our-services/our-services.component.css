@@ -1,0 +1,25 @@
+.service-item svg {
+  height: 1%;
+  width: 15%;
+  align-self: center;
+  margin-right: 1rem;
+  color: var(--bs-primary);
+}
+
+.service-item {
+  position: relative;
+}
+
+@media (max-width: 441px) {
+  .service-item svg {
+    position: absolute;
+    top: 10%;
+    height: 30px;
+  }
+  .service-item h5 {
+    position: relative;
+    width: 70%;
+    top: 0;
+    left: 25%;
+  }
+}

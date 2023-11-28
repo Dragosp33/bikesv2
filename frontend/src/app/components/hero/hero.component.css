@@ -1,0 +1,6 @@
+.hero-header {
+  background-image: url('../../../assets/img/firefly-hero.jpg');
+  background-position: center top;
+  background-color: #0000005e !important;
+  background-blend-mode: color;
+}

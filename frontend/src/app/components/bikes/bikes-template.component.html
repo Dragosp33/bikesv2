@@ -1,0 +1,57 @@
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<div class="container-lg d-flex flex-lg-row flex-column map-flex">
+  <div class="d-flex">
+    <div *ngIf="bikes.length > 0">
+      <h6>Which one suits you?</h6>
+      <p>Click on a marker and see informations about the bike</p>
+      <p>
+        <small>tip:</small> Click on the fullscreen to better view the locations
+      </p>
+    </div>
+    <div *ngIf="bikes.length < 1">
+      <h6 style="color: orange">
+        Please be patient, it seems that there are no bikes available right now
+        :(
+      </h6>
+    </div>
+  </div>
+  <div class="my-google-map d-flex">
+    <google-map #map [width]="null" [height]="null" [options]="mapOptions">
+      <map-marker
+        #marker="mapMarker"
+        *ngFor="let bike of bikes; let i = index"
+        [position]="get_coords(bike)"
+        (mapClick)="openInfoWindow2(marker, i)"
+      >
+        <map-info-window #infoWindow="mapInfoWindow">
+          <div class="d-flex flex-column">
+            {{ bike.tip.nume }}
+            <br />
+            <img
+              class="img-fluid mb-4 marker-img"
+              [src]="bike.tip.image_url"
+              width="100%"
+              max-width="200px"
+            />
+
+            <div
+              class="modal-footer d-flex flex-row align-self-center justify-content-center"
+            >
+              <div class="modal-footer-price">
+                <h6>{{ bike.tip.price }} Lei</h6>
+              </div>
+              <button
+                type="button"
+                class="btn btn-primary"
+                (click)="pay_this(bike.id)"
+                width="30%"
+              >
+                Reserve
+              </button>
+            </div>
+          </div>
+        </map-info-window>
+      </map-marker>
+    </google-map>
+  </div>
+</div>

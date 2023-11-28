@@ -1,0 +1,9 @@
+.product-carousel {
+  width: 100%;
+}
+
+@media (max-width: 661px) {
+  .product-carousel {
+    width: 600px;
+  }
+}

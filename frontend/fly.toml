@@ -1,0 +1,19 @@
+# fly.toml app configuration file generated for bikesv2 on 2023-11-28T19:31:55+02:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = "bikesv2"
+primary_region = "otp"
+
+
+[build]
+  image = "ghcr.io/dragosp33/bikesv2-frontend:latest"
+
+[http_service]
+  internal_port = 80
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]

@@ -1,0 +1,37 @@
+<div
+  class="container-sm d-flex align-items-center justify-content-center mt-3"
+  style="min-height: 400px"
+>
+  <div class="card" style="max-width: 400px">
+    <div class="card-header">
+      <div *ngIf="signupMessage">
+        <p>{{ signupMessage }}</p>
+      </div>
+      <h6 class="card-title px-5">Sign Up to enter our community!</h6>
+    </div>
+    <div class="card-body">
+      <!-- Add login button or other content for non-authenticated users -->
+      <form (ngSubmit)="signUp()" class="d-flex flex-column">
+        <input
+          type="email"
+          [(ngModel)]="email"
+          name="email"
+          placeholder="Email"
+          required
+          class="mb-3"
+        />
+        <input
+          type="password"
+          [(ngModel)]="password"
+          placeholder="Password"
+          name="password"
+          required
+          class="mb-3 px-2"
+        />
+        <button type="submit" class="btn btn-primary">Sign Up</button>
+        <hr />
+        <a class="btn btn-dark" [routerLink]="['/login']">Or Log In</a>
+      </form>
+    </div>
+  </div>
+</div>

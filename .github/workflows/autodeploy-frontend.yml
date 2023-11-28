@@ -1,0 +1,57 @@
+name: autodeploy-frontend
+
+on:
+  push:
+    paths:
+      - 'frontend/**' # Trigger the workflow only when changes are made in the frontend folder
+    branches:
+      - main # Adjust the branch name as needed
+
+jobs:
+  autodeploy-frontend:
+    runs-on: ubuntu-latest
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20 # Use the Node.js version that your Angular app requires
+
+      - name: Install Angular CLI
+        run: npm install -g @angular/cli
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm install
+
+      - name: Build Angular app
+        run: |
+          cd frontend
+          ng build --configuration=production
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.PAT_TOKEN }}
+
+      - name: Build and publish frontend image
+        run: |
+          docker build -t ghcr.io/dragosp33/bikesv2-frontend:latest ./frontend
+          docker push ghcr.io/dragosp33/bikesv2-frontend:latest
+
+      - name: Pull frontend image locally with Docker
+        run: docker pull ghcr.io/dragosp33/bikesv2-frontend:latest
+
+      - name: Install flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy frontend to fly.io
+        run: flyctl deploy --image ghcr.io/dragosp33/bikesv2-frontend:latest --local-only --config ./frontend/fly.toml

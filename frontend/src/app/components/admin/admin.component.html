@@ -1,0 +1,36 @@
+<div *ngIf="users.length > 0">
+  <div class="container mt-3">
+    <h2 class="mb-2">Admin portal</h2>
+
+    <a href="/profile" class="btn btn-dark"> Back to profile </a>
+
+    <h3>Users:</h3>
+    <div class="accordion mt-1" id="accordionPanelsStayOpenExample">
+      <ng-container *ngFor="let user of users">
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button
+              class="accordion-button"
+              type="button"
+              data-bs-toggle="collapse"
+              [attr.data-bs-target]="'#panelsStayOpen-collapse' + user.uid"
+              [attr.aria-controls]="'panelsStayOpen-collapse' + user.id"
+            >
+              {{ user.email }}
+            </button>
+          </h2>
+          <div
+            [id]="'panelsStayOpen-collapse' + user.uid"
+            class="accordion-collapse collapse"
+          >
+            <div class="accordion-body">
+              <p>customer id: {{ user.uid }}</p>
+              <p>role: {{ user.role }}</p>
+              <p>email: {{ user.email }}</p>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+</div>

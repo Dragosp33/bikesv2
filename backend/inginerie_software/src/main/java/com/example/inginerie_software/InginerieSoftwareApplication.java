@@ -54,7 +54,8 @@ public class InginerieSoftwareApplication {
         CorsConfiguration corsConfiguration = new CorsConfiguration();
         corsConfiguration.setAllowCredentials(true);
         corsConfiguration.setAllowedOrigins(Arrays.asList("http://localhost:4200", "localhost:4200", "192.168.0.248:4200",
-                "http://192.168.0.248:4200", "https://frontend-bikes4all.fly.dev", "frontend-bikes4all.fly.dev"));
+                "http://192.168.0.248:4200", "https://frontend-bikes4all.fly.dev", "frontend-bikes4all.fly.dev", 
+                "https://bikesv2.fly.dev", "bikesv2.fly.dev"));
         corsConfiguration.setAllowedHeaders(Arrays.asList("Origin", "Access-Control-Allow-Origin", "Content-Type",
                 "Accept", "Authorization", "Origin, Accept", "X-Requested-With",
                 "Access-Control-Request-Method", "Access-Control-Request-Headers"));

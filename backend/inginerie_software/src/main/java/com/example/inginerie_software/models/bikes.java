@@ -2,6 +2,9 @@ package com.example.inginerie_software.models;
 
 import jakarta.persistence.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "bikes")
 public class bikes {
@@ -18,6 +21,12 @@ public class bikes {
     @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name="tip")
     private bikes_type tip;
+
+    @OneToMany(mappedBy = "bike", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<reservation> reservations = new ArrayList<>();
+
+    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
+    private boolean available;
 
     public bikes() {
     }
@@ -59,5 +68,21 @@ public class bikes {
 
     public void setTip(bikes_type tip) {
         this.tip = tip;
+    }
+
+    public List<reservation> getReservations() {
+        return reservations;
+    }
+
+    public void setReservations(List<reservation> reservations) {
+        this.reservations = reservations;
+    }
+
+    public boolean isAvailable() {
+        return available;
+    }
+
+    public void setAvailable(boolean available) {
+        this.available = available;
     }
 }

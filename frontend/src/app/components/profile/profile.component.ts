@@ -25,8 +25,9 @@ export class ProfileComponent implements OnInit {
               uid: responsetwo.uid,
               email: responsetwo.email,
               role: responsetwo.customClaims.admin === true ? 'admin' : 'user',
+              customerid: responsetwo.customClaims.customerid,
             };
-            console.log(this.userProfile);
+            console.log('userprofile: ', this.userProfile);
           },
           (verificationError) => {
             console.error('Token verification failed', verificationError);

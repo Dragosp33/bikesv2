@@ -80,4 +80,11 @@ export class AuthService {
 
     return this.http.post(endpoint, body);
   }
+
+  createCustomerID(uid: any, email: any): Observable<any> {
+    console.log();
+    const endpoint = `${this.apiUrl}/create-stripe-customer`;
+    const body = { uid: uid, email: email };
+    return this.http.post(endpoint, body);
+  }
 }

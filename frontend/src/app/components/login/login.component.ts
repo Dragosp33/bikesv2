@@ -28,6 +28,11 @@ import { Router } from '@angular/router';
           <h6 class="card-title">
             Log in to be able to access our reservation system
           </h6>
+          <h6>For testing purposes, use this admin account:</h6>
+          <ul>
+            <li>dragosp0201@gmail.com</li>
+            <li>parola2</li>
+          </ul>
         </div>
         <div class="card-body">
           <!-- Add login button or other content for non-authenticated users -->

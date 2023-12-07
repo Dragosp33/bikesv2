@@ -48,13 +48,17 @@ public class AuthController {
             // You can now use information from the decoded token, such as UID, email, etc.
             String uid = decodedToken.getUid();
             String email = decodedToken.getEmail();
-          /* setting an admin if (email.equals("dragosp0201@gmail.com")) {
+            // setting an admin
+           // Map<String, Object> existingClaims = new HashMap<>(FirebaseAuth.getInstance().getUser(uid).getCustomClaims());
+
+         /* if (email.equals("dragosp0201@gmail.com")) {
+
               //  FirebaseAuth.getInstance().setCustomUserClaims(uid, ImmutableMap.of("admin", true));
-               Map<String, Object> claims = new HashMap<>();
-               claims.put("admin", true);
-               FirebaseAuth.getInstance().setCustomUserClaims(uid, claims);
+
+               existingClaims.put("admin", true);
+               FirebaseAuth.getInstance().setCustomUserClaims(uid, existingClaims);
                System.out.println("email verified");
-            }*/
+            } */
             // Add your own logic here to further process the authenticated user
             System.out.println("token valid" + uid + ", email: " + email);
 
@@ -62,6 +66,12 @@ public class AuthController {
             //return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(uid);
             Map<String, Object> claims = decodedToken.getClaims();
             boolean isAdmin = claims != null && claims.containsKey("admin") && (boolean) claims.get("admin");
+            if (claims != null) {
+                System.out.println("Custom Claims:");
+                for (Map.Entry<String, Object> entry : claims.entrySet()) {
+                    System.out.println(entry.getKey() + ": " + entry.getValue());
+                }
+            }
             UserRecord userRecord = FirebaseAuth.getInstance().getUser(uid);
          /*  if (isAdmin) {
 

@@ -17,10 +17,28 @@ export class SignupComponent {
     this.authService
       .signUp(this.email, this.password)
       .then((result) => {
-        this.signupMessage = result.message;
-
-        // Optionally, you can redirect the user or perform additional actions
+        //  console.log(result);
+        console.log(
+          'signup credential',
+          result.userCredential?.user.email,
+          result.userCredential?.user.uid
+        );
+        const id = result.userCredential?.user.uid;
+        const email = result.userCredential?.user.email;
+        this.authService.createCustomerID(id, email).subscribe(
+          (responsetwo) => {
+            console.log('customer create response: ', responsetwo);
+          },
+          (customerError) => {
+            console.error('Customer creation error', customerError);
+            // Handle the verification error
+          }
+        );
       })
+      //this.signupMessage = result.message;
+
+      // Optionally, you can redirect the user or perform additional actions
+
       .catch((error) => {
         console.error('Signup error:', error);
       });

@@ -4,7 +4,7 @@
 
 export const environment = {
   production: false,
-  APIURL: 'https://nonnative-backend.fly.dev',
+  APIURL: 'http://localhost:8080',
   google_maps_api: 'AIzaSyBzer-n2e_broPn2GLG3AYHt1gKGSTn7Q0',
   stripe:
     'pk_test_51N6jyuCxe9tqFGX13APr6Qio7B8lNm81izSnV2xfZYHuamGM9yvzgof2OntOrZnd0XkPFI1OJbfjbyGFc36KHyWt00tFZy8lqK',

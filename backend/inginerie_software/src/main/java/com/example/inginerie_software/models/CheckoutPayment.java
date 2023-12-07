@@ -3,6 +3,7 @@ package com.example.inginerie_software.models;
 public class CheckoutPayment {
     // the product name
     private long id_bike;
+    private String userid;
 
     //  currency like usd, eur ...
     private String currency;
@@ -13,7 +14,13 @@ public class CheckoutPayment {
 
 
     // simple getters and setters
+    public String getUserid() {
+        return userid;
+    }
 
+    public void setUserid(String userid) {
+        this.userid = userid;
+    }
 
     public String getCurrency() {
         return currency;

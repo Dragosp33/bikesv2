@@ -34,11 +34,24 @@ public class bikesService {
         return bikesRepository.save(b);
 
     }
-    public bikes getBikeById(Long id) { return bikesRepository.findBikesById(id).
-            orElseThrow(() -> new bikes_typeException("nu a fost gasita"));}
+    public bikes getBikeById(Long id) {
 
+        bikes k = bikesRepository.findBikesById(id).orElseThrow(() -> new bikes_typeException("nu a fost gasita"));
+        System.out.println("=========== BIKE FOUND ==================:::: with id:  " + id + "----> " + k.getId());
+        return k;
+    }
 
+   public bikes saveBike(bikes b) {
+        return bikesRepository.save(b);
+   }
 
+    public List<bikes> getUnavailableBikes() {
+        return bikesRepository.findByAvailableFalse();
+    }
+
+    public List<bikes> getAvailableBikes() {
+        return bikesRepository.findByAvailableTrue();
+    }
 
     public List<bikes> getBikes() {
         return bikesRepository.findAll();

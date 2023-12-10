@@ -3,6 +3,7 @@ package com.example.inginerie_software.controllers;
 import com.example.inginerie_software.models.bikes;
 import com.example.inginerie_software.models.bikes_type;
 import com.example.inginerie_software.services.bikesService;
+import com.google.gson.Gson;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,10 +22,19 @@ public class bikesController {
     public bikesController(bikesService bs) { this.bikesService = bs;}
 
     @GetMapping
-    public ResponseEntity<List<bikes>> getallbikes(){
-        List<bikes> bikes = bikesService.getBikes();
+    public ResponseEntity<List<bikes>> getAvailableBikes(){
+        List<bikes> bikes = bikesService.getAvailableBikes();
         return new ResponseEntity<>(bikes, HttpStatus.OK);
     }
+
+    /*
+    @GetMapping
+    public ResponseEntity<?> getallbikes(){
+        List<bikes> bikes = bikesService.getBikes();
+        Gson gson = new Gson();
+       return gson.toJson(bikes);
+       // return new ResponseEntity<>(, HttpStatus.OK);
+    }*/
 
     @PostMapping(path = "/add")
     public @ResponseBody

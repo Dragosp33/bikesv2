@@ -1,2 +1,18 @@
 <p>success works!</p>
-<p>session id: {{ this.sessionId }}</p>
+<div
+  *ngIf="successDetails"
+  style="display: flex"
+  class="container-md flex-column"
+>
+  <h1>Success Details</h1>
+
+  <h5>Your receipt is below:</h5>
+
+  <p>Reservation: {{ successDetails.reservation | json }}</p>
+  <img
+    [src]="successDetails.reservation.bike.tip.image_url"
+    style="height: 200px; width: 200px"
+  />
+  <p>Paid: {{ successDetails['paid: '] }}</p>
+  <p>Email: {{ successDetails['email: '] }}</p>
+</div>

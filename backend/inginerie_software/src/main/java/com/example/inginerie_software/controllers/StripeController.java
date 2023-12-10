@@ -2,30 +2,37 @@ package com.example.inginerie_software.controllers;
 
 import com.example.inginerie_software.models.CheckoutPayment;
 import com.example.inginerie_software.models.bikes_type;
+import com.example.inginerie_software.models.reservation;
 import com.example.inginerie_software.services.bikes_typeService;
+import com.example.inginerie_software.services.reservationService;
 import com.google.common.collect.ImmutableMap;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
+import com.google.firebase.auth.FirebaseToken;
 import com.google.firebase.auth.UserRecord;
-import com.google.gson.Gson;
+import com.google.gson.*;
+import com.stripe.exception.EventDataObjectDeserializationException;
+import com.stripe.exception.SignatureVerificationException;
 import com.stripe.exception.StripeException;
-import com.stripe.model.Customer;
-import com.stripe.model.Refund;
+import com.stripe.model.*;
+import com.stripe.net.ApiResource;
+import com.stripe.net.Webhook;
 import com.stripe.param.CustomerCreateParams;
 import com.stripe.param.RefundCreateParams;
 import com.stripe.param.checkout.SessionCreateParams;
 import com.stripe.param.checkout.SessionListParams;
+import org.apache.coyote.Response;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.example.inginerie_software.models.bikes;
 
+import java.lang.reflect.Type;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -48,8 +55,12 @@ import com.stripe.param.checkout.SessionCreateParams;
 
 
         private final com.example.inginerie_software.services.bikesService bikesService;
+        private final reservationService reservationService;
 
-        public StripeController(com.example.inginerie_software.services.bikesService bS) { this.bikesService = bS;}
+        public StripeController(
+                com.example.inginerie_software.services.bikesService bS,
+                reservationService rS) {
+            this.bikesService = bS; this.reservationService = rS;}
 
         @PostMapping("/payment")
         /**
@@ -107,6 +118,8 @@ import com.stripe.param.checkout.SessionCreateParams;
             return gson.toJson(responseData);
         }
 
+
+        // creates a stripe customer for received account - for first signup;
         @PostMapping("/create-stripe-customer")
         public Map<String,String> createStripeCustomer(@RequestBody Map<String, String> requestBody) throws StripeException, FirebaseAuthException {
             init();
@@ -139,11 +152,203 @@ import com.stripe.param.checkout.SessionCreateParams;
         }
 
 
-        @GetMapping("/payment-details")
-        public ResponseEntity<?> getPaymentDetails(@RequestHeader(name = "X-Session-ID") String sessionId) throws StripeException {
+        // production - return receipt to user after payment.
+        /* TODO */
+        // next - production - to be replaced with gson serializer for response
+        @GetMapping("/success-details")
+        public ResponseEntity<?> getSuccessDetails(
+                @RequestHeader(name = "X-Session-ID") String sessionId,
+                @RequestHeader("Authorization") String idToken
+        ) throws StripeException, FirebaseAuthException {
+
             init();
 
-           try{ Session session = Session.retrieve(sessionId);
+
+            try {
+                Session session = Session.retrieve(sessionId);
+                FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
+                if(!decodedToken.getUid().equals(session.getMetadata().get("user"))){
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You can't access this");
+                }
+                reservation res = reservationService.getReservationByStripeid(sessionId);
+                Map<String, Object> response = new HashMap<>();
+                response.put("reservation", res);
+                response.put("paid: ", session.getAmountTotal()/100);
+                response.put("email: ", session.getCustomerDetails().getEmail());
+                return ResponseEntity.ok(response);
+
+            }
+            catch( StripeException s) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Stripe error, session doesn't exist");
+            }
+            catch (FirebaseAuthException f) {
+                f.printStackTrace();
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("You are not authorized.");
+            }
+            catch (NoSuchElementException n) {
+                n.printStackTrace();
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Reservation has not been successfull");
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            } {return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error retrieving payment details");}
+        }
+
+
+        // stripe -webhook, creates reservation if checkout completed.
+        @PostMapping("/stripe-webhook")
+        public ResponseEntity<String> handleStripeWebhook(@RequestBody String payload,
+                                                          @RequestHeader("Stripe-Signature") String signature) throws EventDataObjectDeserializationException {
+
+            Event event = null;
+            try {
+                event = ApiResource.GSON.fromJson(payload, Event.class);
+                System.out.println("event::::::::::::::"+event);
+            } catch (JsonSyntaxException e) {
+                // Invalid payload
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("error signature");
+            }
+
+            EventDataObjectDeserializer dataObjectDeserializer = event.getDataObjectDeserializer();
+            StripeObject stripeObject = null;
+            if (dataObjectDeserializer.getObject().isPresent()) {
+                stripeObject = dataObjectDeserializer.getObject().get();
+            } else {
+                System.out.println("deserialization failed...............");
+                stripeObject = dataObjectDeserializer.deserializeUnsafe();
+                System.out.println("unsafe deserialization:::::::::" + stripeObject);
+            }
+            switch (event.getType()) {
+               /* case "payment_intent.succeeded":
+                    PaymentIntent paymentIntent = (PaymentIntent) stripeObject;
+                    // Then define and call a method to handle the successful payment intent.
+                    // handlePaymentIntentSucceeded(paymentIntent);
+                    break;*/
+                case "checkout.session.completed":
+                    Session session = (Session) stripeObject;
+                    String bikeid = session.getMetadata().get("reservedbike");
+                    String userid = session.getMetadata().get("user");
+
+                    bikes b = this.bikesService.getBikeById(Long.parseLong(bikeid));
+                    System.out.println("BIKE IN CREATE RESERVATION: =>>>>>>>>>> " + b);
+                    b.setAvailable(false);
+                    this.bikesService.saveBike(b);
+                    this.reservationService.createReservation(userid, b, session.getId());
+                    System.out.println("reserved bike " + bikeid + " by user: " + userid + " with stripeid:: " + session.getId());
+                    break;
+                default:
+                    System.out.println("Unhandled event type: " + event.getType());
+            }
+
+
+            return ResponseEntity.ok("");
+
+        }
+
+
+        @GetMapping("/current-reservation")
+        public ResponseEntity<?> getCurrentReservation( @RequestHeader("Authorization") String idToken ) {
+            try{
+                FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
+                String uid = decodedToken.getUid();
+                Optional<reservation> highestExpiryReservation = reservationService.getHighestExpiryReservationForUser(uid);
+
+                return highestExpiryReservation.map(ResponseEntity::ok)
+                        .orElse(ResponseEntity.notFound().build());
+
+
+            }
+            catch(Exception e) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error retrieving payment details");
+            }
+        }
+
+        /*
+        ------------------------------------------------------------------------------------------------------------------
+                                                    DEV/TEST HELPERS HERE
+                                             COMMENT/DELETE THEM BEFORE PRODUCTION
+        -----------------------------------------------------------------------------------------------------------------
+         */
+
+
+        // endpoint for cancel-reservation, for production mode,
+        // add a stripe webhook and then if refunded success, cancel the reservation.
+        @PostMapping("/cancel-reservation")
+        public ResponseEntity<?> cancelReservation( @RequestHeader("Authorization") String idToken ){
+                                                   // @RequestBody String s) {
+            try{
+                FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
+                String uid = decodedToken.getUid();
+                Optional<reservation> highestExpiryReservation = reservationService.getHighestExpiryReservationForUser(uid);
+
+                highestExpiryReservation.ifPresent(reservation -> {
+                    // Set the expiry date to the current time
+                    reservation.setExpiryDate(LocalDateTime.now());
+                    reservation.getBike().setAvailable(true);
+                    bikesService.saveBike(reservation.getBike());
+                    // Save the updated reservation to the database
+                    reservationService.saveReservation(reservation);
+                });
+
+                return highestExpiryReservation.map(ResponseEntity::ok)
+                        .orElse(ResponseEntity.notFound().build());
+
+
+            }
+            catch(Exception e) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error canceling reservation");
+            }
+        }
+
+
+        @GetMapping("/reservations")
+        public ResponseEntity<?> getResrevations() {
+            GsonBuilder gsonBuilder = new GsonBuilder();
+
+
+            gsonBuilder.registerTypeAdapter(LocalDateTime.class, new LocalDateTimeSerializer());
+            gsonBuilder.registerTypeAdapter(LocalDateTime.class, new LocalDateTimeDeserializer());
+
+            gsonBuilder.registerTypeAdapter(reservation.class, new ReservationSerializer());
+            gsonBuilder.registerTypeAdapter(reservation.class, new ReservationDeserializer());
+
+            Gson gsontwo = gsonBuilder.setPrettyPrinting().create();
+            System.out.println("get reservations");
+            List<reservation> restwo = reservationService.getReservations();
+            System.out.println("RESERVATIONS----------------------: " + restwo);
+            return ResponseEntity.ok(gsontwo.toJson(reservationService.getReservations()));
+        }
+
+
+
+        // !! Test - only
+        // Get all reservations;
+        @GetMapping("/reservations-two")
+            public List<reservation> getReservations() {
+            List<reservation> restwo = reservationService.getReservations();
+            return restwo;
+            }
+
+        @GetMapping("/payment-details")
+        public ResponseEntity<?> getPaymentDetails(
+                @RequestHeader(name = "X-Session-ID") String sessionId,
+                @RequestHeader("Authorization") String idToken
+                        ) throws StripeException, FirebaseAuthException {
+
+            init();
+
+
+           try{
+               FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
+
+
+               Session session = Session.retrieve(sessionId);
+               System.out.println(decodedToken.getUid());
+              // System.out.println("========session==========" + session);
+               if(!decodedToken.getUid().equals(session.getMetadata().get("user"))){
+                   return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You can't access this");
+               }
+
                System.out.println("session details " + session);
                System.out.println("-----------------------");
                // System.out.println("payment intent " + session.getPaymentIntentObject());
@@ -167,6 +372,10 @@ import com.stripe.param.checkout.SessionCreateParams;
 
 
 
+
+
+
+        // TO DO :: ADMIN - ONLY
         @GetMapping("/transactions")
         public String getAllTransactions() throws StripeException {
             init();
@@ -204,6 +413,7 @@ import com.stripe.param.checkout.SessionCreateParams;
             return gson.toJson(transactions);
         }
 
+
         private static void init() {
             Stripe.apiKey = "sk_test_51N6jyuCxe9tqFGX1Lu7XzQFiVKGtDUIJqBH47EWrQ9fttV5lN5YLaAijXZbGU5ILRgG4sHehwFM1ysxaRhCqxN8d00mmyj5Z2o";
         }
@@ -211,4 +421,77 @@ import com.stripe.param.checkout.SessionCreateParams;
 
 
 
+// Serializers/Deserializers For DateTime Format and reservations type
+// Will use for next delivery with the /reservation endpoint, when reservations schema is set for good
+class LocalDateSerializer implements JsonSerializer <LocalDate> {
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-d");
 
+    @Override
+    public JsonElement serialize(LocalDate localDate, Type srcType, JsonSerializationContext context) {
+        return new JsonPrimitive(formatter.format(localDate));
+    }
+}
+
+class LocalDateTimeSerializer implements JsonSerializer < LocalDateTime > {
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("uuuu::MM::d HH::mm::ss::ms");
+
+    @Override
+    public JsonElement serialize(LocalDateTime localDateTime, Type srcType, JsonSerializationContext context) {
+        return new JsonPrimitive(formatter.format(localDateTime));
+    }
+}
+
+class LocalDateDeserializer implements JsonDeserializer < LocalDate > {
+    @Override
+    public LocalDate deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+            throws JsonParseException {
+        return LocalDate.parse(json.getAsString(),
+                DateTimeFormatter.ofPattern("yyyy-MM-d").withLocale(Locale.ENGLISH));
+    }
+}
+
+class LocalDateTimeDeserializer implements JsonDeserializer < LocalDateTime > {
+    @Override
+    public LocalDateTime deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+            throws JsonParseException {
+        return LocalDateTime.parse(json.getAsString(),
+                DateTimeFormatter.ofPattern("uuuu::MM::d HH::mm::ss::ms").withLocale(Locale.ENGLISH));
+    }
+}
+
+
+class ReservationSerializer implements JsonSerializer<reservation> {
+    @Override
+    public JsonElement serialize(reservation src, Type typeOfSrc, JsonSerializationContext context) {
+        JsonObject jsonReservation = new JsonObject();
+     //   jsonReservation.addProperty("id", src.getUserid());
+        jsonReservation.addProperty("userid", src.getUserid());
+        //jsonReservation.addProperty("stripeid", src.getBike());
+
+        // Add other properties as needed
+
+        // Example: Serialize the associated bike
+        /*if (src.getBike() != null) {
+            jsonReservation.add("bike", context.serialize(src.getBike(), bikes.class));
+        }*/
+
+        return jsonReservation;
+    }
+}
+
+class ReservationDeserializer implements JsonDeserializer<reservation> {
+    @Override
+    public reservation deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+            throws JsonParseException {
+        JsonObject jsonObject = json.getAsJsonObject();
+
+        String userid = jsonObject.get("userid").getAsString();
+        String stripeid = jsonObject.get("stripeid").getAsString();
+
+        // Example: Deserialize the associated bike
+        bikes bike = context.deserialize(jsonObject.get("bike"), bikes.class);
+
+        // Create and return the reservation
+        return new reservation(userid, bike, stripeid);
+    }
+}

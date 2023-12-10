@@ -1,5 +1,7 @@
 package com.example.inginerie_software.models;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
 import java.util.ArrayList;
@@ -22,13 +24,21 @@ public class bikes {
     @JoinColumn(name="tip")
     private bikes_type tip;
 
-    @OneToMany(mappedBy = "bike", cascade = CascadeType.ALL, orphanRemoval = true)
+    /*
+    @OneToMany (mappedBy = "bike")
+    @JsonBackReference
+    private List<reservation> reservations = new ArrayList<>();*/
+    @OneToMany(
+            cascade = CascadeType.ALL
+    )
+    @JoinColumn(name = "res")
     private List<reservation> reservations = new ArrayList<>();
 
     @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
     private boolean available;
 
     public bikes() {
+        this.available = true;
     }
 
     public bikes(Long id, String longitudine, String latitudine, bikes_type tip) {
@@ -36,6 +46,8 @@ public class bikes {
         this.longitudine = longitudine;
         this.latitudine = latitudine;
         this.tip = tip;
+        this.available = true;
+
     }
 
     public Long getId() {

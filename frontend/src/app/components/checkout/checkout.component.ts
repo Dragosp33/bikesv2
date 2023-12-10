@@ -45,11 +45,13 @@ export class CheckoutComponent {
         .post(`${environment.APIURL}/payment`, payment)
         .subscribe((data: any) => {
           const expirationTime = new Date().getTime() + 60 * 60 * 1000; // 1 hour
-          sessionStorage.setItem('stripeSessionId', data.id);
+
+          sessionStorage.setItem('stripe_sess', data.id);
           sessionStorage.setItem(
             'stripeSessionExpiration',
             expirationTime.toString()
           );
+
           stripe.redirectToCheckout({
             sessionId: data.id,
           });

@@ -2,6 +2,8 @@ package com.example.inginerie_software.models;
 
 
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -26,9 +28,18 @@ public class reservation implements Serializable {
 
     private String userid;
 
+    /*
     @ManyToOne
     @JoinColumn(name = "bike_id") // This is the foreign key column in the Reservation table
     private bikes bike;
+*/
+    @ManyToOne//(cascade = CascadeType.ALL)
+    @JoinColumn(name="bike")
+   // @JsonManagedReference
+    private bikes bike;
+
+    @Column(name = "stripeid", updatable = false)
+    private String stripeid;
 
     @Column(name="expiry_date")
     private LocalDateTime expiryDate;
@@ -36,9 +47,10 @@ public class reservation implements Serializable {
     public reservation() {
     }
 
-    public reservation(String userid, bikes bike) {
+    public reservation(String userid, bikes bike, String stripeid) {
         this.userid = userid;
         this.bike = bike;
+        this.stripeid =stripeid;
         this.expiryDate = LocalDateTime.now().plusHours(1);
     }
 
@@ -64,5 +76,9 @@ public class reservation implements Serializable {
 
     public void setExpiryDate(LocalDateTime expiryDate) {
         this.expiryDate = expiryDate;
+    }
+
+    public String getStripeid() {
+        return stripeid;
     }
 }

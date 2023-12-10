@@ -1,0 +1,57 @@
+<style>
+  progress {
+    visibility: hidden;
+    width: 0;
+    height: 0;
+  }
+
+  .css {
+    background: radial-gradient(
+      closest-side,
+      white 79%,
+      transparent 80% 100%,
+      white 0
+    );
+  }
+
+  .progress-bar {
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+
+    /* to center the percentage value */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+</style>
+
+<div *ngIf="reservation" class="progress-bar-container">
+  <div
+    *ngIf="
+      (remainingTime$ | async) !== '' &&
+      (remainingTime$ | async) as remainingTime
+    "
+  >
+    <h4>percent:: {{ percentage }}</h4>
+    <h2>
+      <label for="css">CSS</label>
+    </h2>
+    <div
+      class="progress-bar css"
+      [ngStyle]="{
+        background:
+          'radial-gradient(closest-side, white 79%, transparent 80% 100%, white 0), conic-gradient(green calc(' +
+          percentage +
+          ' * 1%), grey 0)'
+      }"
+    >
+      <img
+        [src]="reservation.bike.tip.image_url"
+        class="img-fluid rounded"
+        style="clip-path: circle()"
+      />
+      <progress id="css" min="0" max="100" [value]="percentage"></progress>
+    </div>
+  </div>
+</div>

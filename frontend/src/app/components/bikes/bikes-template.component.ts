@@ -137,7 +137,21 @@ export class BikesTemplateComponent
 
   private setupLiveTimer(): void {
     if (this.reservation && this.reservation.expiryDate) {
-      const expiryTime = new Date(this.reservation.expiryDate).getTime();
+
+      console.log('expiry date:::::::::', this.reservation.expiryDate);
+      //const expiryTime = new Date(this.reservation.expiryDate).getTime();
+      // const expiryTime = Date.parse())
+      const dateParts = this.reservation.expiryDate.split(/[-T:.]/);
+      const expiryTime = Date.UTC(
+        parseInt(dateParts[0], 10),
+        parseInt(dateParts[1], 10) - 1, // months are 0-indexed
+        parseInt(dateParts[2], 10),
+        parseInt(dateParts[3], 10),
+        parseInt(dateParts[4], 10),
+        parseInt(dateParts[5], 10)
+        // parseInt(dateParts[6], 10)
+      );
+      console.log('expiry time::::', expiryTime);
 
       // Create an observable that emits every second
       const timer$ = timer(0, 1000);
@@ -145,7 +159,10 @@ export class BikesTemplateComponent
       // Calculate remaining time every second
       this.remainingTime$ = timer$.pipe(
         map(() => {
-          const now = new Date().getTime();
+
+          const now = Date.now();
+          //  console.log('NOW: ', now, 'EXPIRY: ', expiryTime);
+
           const timeDifference = expiryTime - now;
 
           if (timeDifference <= 0) {

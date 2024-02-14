@@ -12,6 +12,8 @@ import { ProfileComponent } from './components/profile/profile.component';
 import { AdminPage } from './components/admin/admin.component';
 import { TeamComponent } from './components/team/team.component';
 import { SignupComponent } from './components/signup/signup.component';
+import { AuthComponent } from './components/auth/auth.component';
+import { ResetPasswordComponent } from './components/reset-password/reset-password.component';
 
 const routes: Routes = [
   { path: '', component: LandingComponent },
@@ -29,6 +31,8 @@ const routes: Routes = [
   { path: 'checkout', component: CheckoutComponent },
   { path: 'login', component: LoginComponent },
   { path: 'signup', component: SignupComponent },
+  { path: 'auth', component: AuthComponent },
+  { path: 'resetpassword', component: ResetPasswordComponent },
 ];
 
 @NgModule({

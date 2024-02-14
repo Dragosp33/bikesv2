@@ -8,7 +8,7 @@
   <div class="header">
     <h2>Hello, this is your current bike:</h2>
   </div>
-  <div style="width: 200px">
+  <div style="width: 200px" class="my-5">
     <img
       [src]="reservation.bike.tip.image_url"
       class="img-fluid rounded"
@@ -23,8 +23,15 @@
     "
   >
     <h2>Remaining time:</h2>
-    {{ remainingTime }}
-
+    <div
+      class="d-flex flex-row mb-3 align-items-center"
+      style="justify-content: space-between"
+    >
+      {{ remainingTime }}
+      <button class="btn btn-light" type="button" (click)="initiate_refund()">
+        Cancel
+      </button>
+    </div>
     <div
       class="progress"
       role="progressbar"
@@ -40,6 +47,9 @@
       ></div>
     </div>
   </div>
+  <p class="mt-2">You can cancel at any time and get refunded.</p>
+  <p *ngIf="loading" class="mt-1">Processing refund..</p>
+  <p *ngIf="message" class="mt-1 danger">{{ message }}</p>
 </div>
 <ng-template #mapSection>
   <div class="container-lg d-flex flex-lg-row flex-column map-flex">

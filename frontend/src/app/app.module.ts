@@ -29,6 +29,8 @@ import { OurServicesComponent } from './components/our-services/our-services.com
 import { AboutComponent } from './components/about/about.component';
 import { HeroComponent } from './components/hero/hero.component';
 import { SignupComponent } from './components/signup/signup.component';
+import { AuthComponent } from './components/auth/auth.component';
+import { ResetPasswordComponent } from './components/reset-password/reset-password.component';
 
 @NgModule({
   declarations: [
@@ -50,6 +52,8 @@ import { SignupComponent } from './components/signup/signup.component';
     OurServicesComponent,
     HeroComponent,
     SignupComponent,
+    AuthComponent,
+    ResetPasswordComponent,
   ],
   imports: [
     BrowserModule,

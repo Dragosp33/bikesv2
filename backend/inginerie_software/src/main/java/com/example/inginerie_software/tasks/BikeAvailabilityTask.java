@@ -42,9 +42,15 @@ public class BikeAvailabilityTask {
                 bike.setAvailable(true);
                 bikesService.saveBike(bike);
 
-                // You may also want to update other details, like setting the bike's reservations to an empty list
+                // setting the bike's reservations to an empty list
                 // bike.setReservations(new ArrayList<>());
             }
+                else if (latestReservation.isEmpty()){
+                    System.out.println("FOUND UNAVAILABLE BIKE WITH NO RESERVATION...MAKING BIKE AVAILABLE AGAIN... ");
+                    bike.setAvailable(true);
+                    bikesService.saveBike(bike);
+                }
+
                 else {
                     System.out.println("NO EXPIRED RESERVATION FOUND...CHECKING AGAIN IN 60 SECONDS...");
                 }

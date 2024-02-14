@@ -1,22 +1,29 @@
 package com.example.inginerie_software.controllers;
 
+import com.example.inginerie_software.services.EmailService;
+import com.example.inginerie_software.services.reservationService;
 import com.google.common.collect.ImmutableMap;
 import com.google.firebase.auth.*;
-//changed here
-//end
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
+
+    private final EmailService emailService;
+
+    public AuthController(EmailService eS) { this.emailService=eS;}
 
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestBody Map<String, String> loginRequest) {
@@ -129,5 +136,47 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token verification failed");
         }
     }
+
+
+    // reset password mail:
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> getResetLink(@RequestBody String email) {
+        ActionCodeSettings actionCodeSettings = ActionCodeSettings.builder()
+                .setUrl("https://frontend-bikes4all.fly.dev")
+                .setHandleCodeInApp(true)
+                //.setDynamicLinkDomain("ingineriesoftware.web.app")
+                .build();
+
+        System.out.println("EMAIL:: " + email);
+        // String email = "polifronie.dragos@yahoo.com";
+        try {
+            String link = FirebaseAuth.getInstance().generatePasswordResetLink(
+                    email, actionCodeSettings);
+            // Construct email verification template, embed the link and send
+            // using custom SMTP server.
+           // sendCustomEmail(email, displayName, link);
+            UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(link);
+            String oobCode = builder.build().getQueryParams().get("oobCode").get(0);
+            System.out.println(oobCode);
+            String resetLink = UriComponentsBuilder.fromUriString("https://frontend-bikes4all.fly.dev/auth?mode=resetPassword&oobCode="+oobCode).build().toString();
+            this.emailService.sendResetPasswordEmail(email, resetLink);
+
+            return ResponseEntity.ok(Map.of("message", "email sent"));
+
+
+        } catch (FirebaseAuthException e) {
+            System.out.println("Error generating email link: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "Couldn't generate link"));
+        } catch ( IOException e) {
+            System.out.println("Error sending the email: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "Couldn't send email"));
+        }
+        catch (Exception e) {
+            System.out.println("Error internal " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Generic error. Make sure the email is valid"));
+        }
+
+    }
+
 }
 

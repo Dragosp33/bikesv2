@@ -10,6 +10,11 @@ import { AuthService } from 'src/app/services/auth.service';
 export class ProfileComponent implements OnInit {
   protected userProfile?: UserDetails;
 
+  showEmailForm = false;
+  newEmail: String = '';
+  text_class = '';
+  message = '';
+
   constructor(private authService: AuthService) {}
 
   ngOnInit(): void {
@@ -45,5 +50,42 @@ export class ProfileComponent implements OnInit {
     this.authService.logout().then((response) => {
       console.log('logged out: ', response);
     });
+  }
+
+  showEmailChangeForm() {
+    this.showEmailForm = true;
+  }
+
+  closeEmailChangeForm() {
+    this.showEmailForm = false;
+  }
+
+  submitEmailChangeForm() {
+    this.message = 'loading..';
+    if (this.newEmail.replace(' ', '').length < 5) {
+      this.message = 'email should be at least 5 characters long.';
+      this.text_class = 'text-danger';
+      this.newEmail = '';
+      return;
+    }
+
+    this.authService
+      .getCurrentUser()
+      ?.getIdToken(true)
+      .then((token) => {
+        this.authService.sendEmailChangeForm(token, this.newEmail).subscribe(
+          (responsetwo) => {
+            console.log('Response: ', responsetwo);
+            this.message = responsetwo.message;
+            this.text_class = 'text-success';
+          },
+          (error) => {
+            console.error('Error', error);
+            // Handle the verification error
+            this.message = error.error.message;
+            this.text_class = 'text-danger';
+          }
+        );
+      });
   }
 }

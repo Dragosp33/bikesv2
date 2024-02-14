@@ -18,6 +18,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 
 import { Observable, Subscription, interval, timer, of } from 'rxjs';
 import { map, takeUntil } from 'rxjs/operators';
+import { response } from 'express';
 
 @Component({
   selector: 'app-bike-template',
@@ -28,6 +29,8 @@ import { map, takeUntil } from 'rxjs/operators';
 export class BikesTemplateComponent
   implements OnInit, AfterViewInit, OnDestroy
 {
+  public loading = false;
+  public message = '';
   public apikey = environment.google_maps_api;
   public bikes: Bikes[];
   public reservation: any;
@@ -121,6 +124,28 @@ export class BikesTemplateComponent
     );
   }
 
+  initiate_refund(): void {
+    this.loading = true;
+    this.paymentService.initiateRefund().subscribe(
+      (response) => {
+        this.loading = false;
+
+        this.remainingTime$ = of('');
+        this.message =
+          'Successfully refunded, you will shortly receive an email.';
+        console.log('response in refund:  ', response);
+        setTimeout(() => {
+          this.reservation = null;
+        }, 5000);
+      },
+      (error) => {
+        this.loading = false;
+        this.message = 'Sorry, we could not process your refund...';
+        console.error('Error fetching current reservation:', error);
+      }
+    );
+  }
+
   public setInitialTimer(): void {
     this.paymentService.getCurrentReservation().subscribe(
       (response) => {
@@ -137,7 +162,6 @@ export class BikesTemplateComponent
 
   private setupLiveTimer(): void {
     if (this.reservation && this.reservation.expiryDate) {
-
       console.log('expiry date:::::::::', this.reservation.expiryDate);
       //const expiryTime = new Date(this.reservation.expiryDate).getTime();
       // const expiryTime = Date.parse())
@@ -159,7 +183,6 @@ export class BikesTemplateComponent
       // Calculate remaining time every second
       this.remainingTime$ = timer$.pipe(
         map(() => {
-
           const now = Date.now();
           //  console.log('NOW: ', now, 'EXPIRY: ', expiryTime);
 

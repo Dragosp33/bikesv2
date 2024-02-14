@@ -1,0 +1,71 @@
+<ng-container *ngIf="actionCodeChecked" [ngSwitch]="mode">
+  <div
+    class="container-sm d-flex align-items-center justify-content-center mt-3"
+    style="min-height: 400px"
+  >
+    <!-- Reset Password -->
+    <ng-container *ngSwitchCase="'resetPassword'">
+      <div class="card" style="max-width: 400px">
+        <div class="card-header">
+          <h6 class="card-title">We're glad you're back!</h6>
+          <h6>
+            Reset your password. Make sure you memorize it this time. Or not, we
+            will help you again!
+          </h6>
+        </div>
+        <div class="card-body">
+          <form (ngSubmit)="handleResetPassword()" class="d-flex flex-column">
+            <input
+              [(ngModel)]="newPassword"
+              type="password"
+              id="newPassword"
+              name="newPassword"
+              placeholder="New Password"
+            />
+            <br />
+            <input
+              [(ngModel)]="confirmPassword"
+              type="password"
+              id="confirmPassword"
+              name="confirmPassword"
+              placeholder="Confirm Password"
+            />
+            <br />
+            <button type="submit" class="btn btn-primary">Confirm</button>
+          </form>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- Recover Email -->
+    <ng-container *ngSwitchCase="'recoverEmail'"> </ng-container>
+
+    <!-- Verify Email -->
+    <ng-container *ngSwitchCase="'verifyEmail'"> </ng-container>
+
+    <!-- Change Email -->
+    <ng-container *ngSwitchCase="'changeEmail'">
+      <div class="card" style="max-width: 400px">
+        <div class="card-header">
+          <h6 class="card-title">New mail, same you!</h6>
+          <h6>
+            Even though you changed your mail, you remain the same person, so
+            don't worry about your previous details!
+          </h6>
+        </div>
+        <div class="card-body">
+          <a routerLink="/login" class="btn btn-primary"> back to login</a>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+</ng-container>
+
+<ng-container *ngIf="!actionCodeChecked">
+  <div
+    class="container-sm d-flex align-items-center justify-content-center mt-3"
+    style="min-height: 400px"
+  >
+    {{ this.message }}
+  </div>
+</ng-container>

@@ -44,6 +44,25 @@ export class PaymentService {
     });
   }
 
+  initiateRefund(): Observable<any> {
+    const tokenPromise = this.auth.getCurrentUser()?.getIdToken();
+    if (!tokenPromise) {
+      // Return an observable with an error or empty data
+      return new Observable(); // Modify this line as needed
+    }
+
+    return from(tokenPromise).pipe(
+      switchMap((token) => {
+        console.log('token present in switch map:  ', token);
+        const headers = new HttpHeaders().set('Authorization', token || '');
+        console.log('HEADERS:: ', headers);
+        return this.http.post<any>(`${environment.APIURL}/refund`, null, {
+          headers,
+        });
+      })
+    );
+  }
+
   getCurrentReservation(): Observable<any> {
     const tokenPromise = this.auth.getCurrentUser()?.getIdToken();
     if (!tokenPromise) {

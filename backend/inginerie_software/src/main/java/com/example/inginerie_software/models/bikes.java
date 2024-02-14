@@ -24,6 +24,7 @@ public class bikes {
     @JoinColumn(name="tip")
     private bikes_type tip;
 
+
     /*
     @OneToMany (mappedBy = "bike")
     @JsonBackReference

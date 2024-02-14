@@ -1,5 +1,8 @@
-<div class="container-lg mt-5">
-  <div *ngIf="this.userProfile">
+<div
+  class="container-lg mt-5 d-flex align-items-center"
+  style="justify-content: center"
+>
+  <div *ngIf="this.userProfile" class="profile-card">
     <div class="card">
       <div class="card-header">
         <h5 class="card-title">Hello, {{ this.userProfile.email }}</h5>
@@ -7,7 +10,60 @@
       <div class="card-body">
         <p>How can we help you today?</p>
         <small class="mb-2"> account details: </small>
-        <p>email: {{ this.userProfile.email }}</p>
+        <div class="d-flex align-items-center">
+          <p>email: {{ this.userProfile.email }}</p>
+          <button
+            class="btn btn-black pb-3"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#emailChangeCollapse"
+            aria-expanded="true"
+            aria-controls="emailChangeCollapse"
+          >
+            <i class="bi bi-pencil-fill"></i>
+          </button>
+        </div>
+        <div class="accordion mt-3" id="emailChangeAccordion">
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="panelsStayOpen-headingOne"></h2>
+            <div
+              id="emailChangeCollapse"
+              class="accordion-collapse collapse"
+              aria-labelledby="panelsStayOpen-headingOne"
+            >
+              <div class="accordion-body">
+                <small class="pb-2"> enter your new email here.</small>
+                <form (ngSubmit)="submitEmailChangeForm()">
+                  <div class="form-group">
+                    <label for="newEmail">New Email:</label>
+                    <div class="d-flex">
+                      <input
+                        type="email"
+                        id="newEmail"
+                        name="newEmail"
+                        class="form-control"
+                        [(ngModel)]="newEmail"
+                        required
+                      />
+
+                      <button type="submit" class="btn btn-primary">
+                        Submit
+                      </button>
+                    </div>
+                  </div>
+                </form>
+                <small> you will receive a link on your current email.</small>
+                <br />
+                <small *ngIf="message" class="{{ text_class }}">
+                  {{ message }}</small
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Email Change Form -->
+        <div *ngIf="showEmailForm"></div>
         <p>customer id: {{ this.userProfile.customerid }}</p>
         <p>your current role: {{ this.userProfile.role }}</p>
       </div>
@@ -24,4 +80,6 @@
       </div>
     </div>
   </div>
+
+  <!-- Collapsible Email Change Form -->
 </div>

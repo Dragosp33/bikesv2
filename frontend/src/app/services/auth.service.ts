@@ -87,4 +87,24 @@ export class AuthService {
     const body = { uid: uid, email: email };
     return this.http.post(endpoint, body);
   }
+
+  resetPassword(email: String): Observable<any> {
+    const endpoint = `${this.apiUrl}/api/auth/reset-password`;
+    const body = email;
+    return this.http.post(endpoint, body);
+  }
+
+  sendEmailChangeForm(token: String, email: String): Observable<any> {
+    const endpoint = `${this.apiUrl}/reset-email`;
+    const body = email;
+    const headers = {
+      Authorization: `${token}`,
+    };
+    return this.http.post(endpoint, body, { headers });
+  }
+
+  verifyEmailCode(oobCode: String): Observable<any> {
+    const endpoint = `${this.apiUrl}/verify-email-code?oobCode=${oobCode}`;
+    return this.http.get(endpoint);
+  }
 }

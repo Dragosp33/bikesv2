@@ -1,10 +1,10 @@
 package com.example.inginerie_software.controllers;
 
-import com.example.inginerie_software.models.CheckoutPayment;
-import com.example.inginerie_software.models.bikes_type;
-import com.example.inginerie_software.models.reservation;
+import com.example.inginerie_software.models.*;
+import com.example.inginerie_software.services.EmailService;
 import com.example.inginerie_software.services.bikes_typeService;
 import com.example.inginerie_software.services.reservationService;
+import com.example.inginerie_software.services.tokensService;
 import com.google.common.collect.ImmutableMap;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
@@ -18,6 +18,7 @@ import com.stripe.model.*;
 import com.stripe.net.ApiResource;
 import com.stripe.net.Webhook;
 import com.stripe.param.CustomerCreateParams;
+import com.stripe.param.CustomerUpdateParams;
 import com.stripe.param.RefundCreateParams;
 import com.stripe.param.checkout.SessionCreateParams;
 import com.stripe.param.checkout.SessionListParams;
@@ -25,13 +26,14 @@ import org.apache.coyote.Response;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.example.inginerie_software.models.bikes;
 
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 import org.springframework.web.bind.annotation.PostMapping;
@@ -45,6 +47,7 @@ import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.checkout.Session;
 import com.stripe.param.checkout.SessionCreateParams;
+import org.springframework.web.util.UriComponentsBuilder;
 
 //secret = sk_test_51N6jyuCxe9tqFGX1Lu7XzQFiVKGtDUIJqBH47EWrQ9fttV5lN5YLaAijXZbGU5ILRgG4sHehwFM1ysxaRhCqxN8d00mmyj5Z2o
 
@@ -56,11 +59,13 @@ import com.stripe.param.checkout.SessionCreateParams;
 
         private final com.example.inginerie_software.services.bikesService bikesService;
         private final reservationService reservationService;
+        private final EmailService emailService;
+        private final com.example.inginerie_software.services.tokensService tokensService;
 
         public StripeController(
                 com.example.inginerie_software.services.bikesService bS,
-                reservationService rS) {
-            this.bikesService = bS; this.reservationService = rS;}
+                reservationService rS, EmailService eS, tokensService tS) {
+            this.bikesService = bS; this.reservationService = rS; this.emailService=eS; this.tokensService = tS;}
 
         @PostMapping("/payment")
         /**
@@ -91,7 +96,10 @@ import com.stripe.param.checkout.SessionCreateParams;
                     // We will use the credit card payment method
                     .addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD)
                     // .setExpiresAt(LocalDateTime.now().plusHours(1).atOffset(ZoneOffset.UTC).toInstant().toEpochMilli())
-                    .setMode(SessionCreateParams.Mode.PAYMENT).setSuccessUrl(payment.getSuccessUrl())
+                    .setMode(SessionCreateParams.Mode.PAYMENT)
+                    .setPaymentIntentData(SessionCreateParams.PaymentIntentData.builder().setSetupFutureUsage(SessionCreateParams.PaymentIntentData.SetupFutureUsage.ON_SESSION).build())
+                    .setSuccessUrl(payment.getSuccessUrl())
+
                     .setCancelUrl(
                             payment.getCancelUrl())
               .setCustomer(cus_id)
@@ -198,7 +206,7 @@ import com.stripe.param.checkout.SessionCreateParams;
         // stripe -webhook, creates reservation if checkout completed.
         @PostMapping("/stripe-webhook")
         public ResponseEntity<String> handleStripeWebhook(@RequestBody String payload,
-                                                          @RequestHeader("Stripe-Signature") String signature) throws EventDataObjectDeserializationException {
+                                                          @RequestHeader("Stripe-Signature") String signature) throws Exception {
 
             Event event = null;
             try {
@@ -226,6 +234,7 @@ import com.stripe.param.checkout.SessionCreateParams;
                     break;*/
                 case "checkout.session.completed":
                     Session session = (Session) stripeObject;
+
                     String bikeid = session.getMetadata().get("reservedbike");
                     String userid = session.getMetadata().get("user");
 
@@ -236,6 +245,44 @@ import com.stripe.param.checkout.SessionCreateParams;
                     this.reservationService.createReservation(userid, b, session.getId());
                     System.out.println("reserved bike " + bikeid + " by user: " + userid + " with stripeid:: " + session.getId());
                     break;
+                case "refund.created":
+                    Refund refund = (Refund) stripeObject;
+                    //String cus = refund.getPaymentIntentObject().getCustomer();
+                    String sessionId = refund.getMetadata().get("session_id");
+                    //String userid = session.getMetadata().get("user");
+                    reservation res = this.reservationService.getReservationByStripeid(sessionId);
+                   // System.out.println(" RESERVATION: " + res);
+                    if(res.getExpiryDate().isAfter(LocalDateTime.now())) {
+                    bikes b2 = res.getBike();
+                   // System.out.println("BIKE IN CREATE RESERVATION: =>>>>>>>>>> " + b2);
+                    b2.setAvailable(true);
+                    res.setExpiryDate(LocalDateTime.now());
+                    this.bikesService.saveBike(b2);
+                    this.reservationService.saveReservation(res);
+                    }
+                    break;
+                case "charge.refund.updated":
+                    System.out.println("==================================");
+                    System.out.println(event.getType() + " CASE ===================");
+                    System.out.println("=====STRIPEOBJECT CLASS========  " + stripeObject.getClass());
+
+                   Refund charge = (Refund) stripeObject;
+                    System.out.println("=====STRIPEOBJECT VALUE=======  " + stripeObject.getClass());
+                    System.out.println("===============END STRIPEOBJECT VALUE======================================");
+
+                   String sess_id = charge.getMetadata().get("session_id");
+                    System.out.println("STRIPE SESSION ID: = " + sess_id);
+
+                    // String sess_id = charge.getPaymentIntentObject().getMetadata().get("session_id");
+                    reservation res2 = this.reservationService.getReservationByStripeid(sess_id);
+                    bikes b2 = res2.getBike();
+                    System.out.println("BIKE IN CANCEL RESERVATION: =>>>>>>>>>> " + b2);
+                    b2.setAvailable(true);
+                    res2.setExpiryDate(LocalDateTime.now());
+                    this.bikesService.saveBike(b2);
+                    this.reservationService.saveReservation(res2);
+                    break;
+
                 default:
                     System.out.println("Unhandled event type: " + event.getType());
             }
@@ -252,6 +299,58 @@ import com.stripe.param.checkout.SessionCreateParams;
                 FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
                 String uid = decodedToken.getUid();
                 Optional<reservation> highestExpiryReservation = reservationService.getHighestExpiryReservationForUser(uid);
+                System.out.println("found   ++ " + highestExpiryReservation);
+                return highestExpiryReservation.map(ResponseEntity::ok)
+                        .orElse(ResponseEntity.notFound().build());
+
+
+            }
+            catch(Exception e) {
+
+                e.printStackTrace();
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error retrieving payment details");
+            }
+        }
+
+
+        @PostMapping("/refund")
+        public ResponseEntity<?> refundCurrentReservation( @RequestHeader("Authorization") String idToken ) {
+                init();
+            try{
+                FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
+                String uid = decodedToken.getUid();
+                Optional<reservation> highestExpiryReservation = reservationService.getHighestExpiryReservationForUser(uid);
+                Session session = Session.retrieve(highestExpiryReservation.get().getStripeid());
+                System.out.println("SESSION IN /REFUND: " + session);
+
+                LocalDateTime now = LocalDateTime.now();
+                if(highestExpiryReservation.get().getExpiryDate().isBefore(LocalDateTime.now())) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("This payment has been refunded already.");
+                }
+                // PaymentIntent paymentIntent = session.getPaymentIntentObject();
+                PaymentIntent paymentIntent = PaymentIntent.retrieve(session.getPaymentIntent());
+
+                paymentIntent.setMetadata(Map.of("session_id", session.getId()));
+                System.out.println("===================PAYMENT INTENT: " + paymentIntent);
+                long minutesDifference = ChronoUnit.MINUTES.between(now, highestExpiryReservation.get().getExpiryDate());
+                Long amount = Math.round(session.getAmountTotal() * ((double)minutesDifference / 60));
+                System.out.println("amount " + amount + " minutes difference: " + minutesDifference + " Stripe amount" + session.getAmountTotal());
+                RefundCreateParams params =
+                        RefundCreateParams.builder()
+                                .setPaymentIntent(paymentIntent.getId())
+                                .setAmount(amount)
+                                .putMetadata("session_id", session.getId())
+                                .build();
+
+                Refund refund = Refund.create(params);
+
+                // mail send:
+                this.emailService.sendTemplateEmail(decodedToken.getEmail(), session.getAmountTotal()/100,
+                        highestExpiryReservation.get().getExpiryDate().toString(),
+                        highestExpiryReservation.get().getBike().getTip().getNume(),
+                        highestExpiryReservation.get().getBike().getTip().getImage_url(),
+                        highestExpiryReservation.get().getBike().getTip().getPrice() - amount
+                        );
 
                 return highestExpiryReservation.map(ResponseEntity::ok)
                         .orElse(ResponseEntity.notFound().build());
@@ -259,8 +358,118 @@ import com.stripe.param.checkout.SessionCreateParams;
 
             }
             catch(Exception e) {
+                System.out.println(e);
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error retrieving payment details");
             }
+        }
+
+
+        @PostMapping("/reset-email")
+        public ResponseEntity<?> resetEmail(
+                @RequestHeader("Authorization") String idToken, @RequestBody String email) {
+
+
+            init();
+            try{
+                FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
+                String old_email = decodedToken.getEmail();
+
+
+                // create expiry date to verify in /verify-code
+                tokens t = this.tokensService.createToken(old_email, email);
+
+                String resetLink = UriComponentsBuilder.fromUriString("https://frontend-bikes4all.fly.dev/auth?mode=changeEmail&oobCode="+t.getValue()).build().toString();
+                // create link from token, send email
+                this.emailService.sendChangeEmail(old_email, resetLink, email);
+
+
+                // this.emailService.sendChangeEmail(email, resetLink, email);
+
+
+
+
+                return ResponseEntity.ok(Map.of("message", "Email sent. Link is available for 60minutes"));
+
+
+            } catch (FirebaseAuthException e) {
+                e.printStackTrace();
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "You are not authorized."));
+            }
+            catch ( IOException e) {
+                System.out.println("Error sending the email: " + e.getMessage());
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "Couldn't send email"));
+            }
+            catch (Exception e ) {
+                System.out.println("Error retrieving request email: " + e.getMessage());
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "Email invalid"));
+            }
+
+        }
+
+
+        @GetMapping("/verify-email-code")
+        public ResponseEntity<?> verifyEmailChange
+                (@RequestParam("oobCode") String oobCode) {
+
+            try {
+                init();
+                tokens t = tokensService.getTokenByValue(oobCode);
+                if(t.getExpiryDate().isBefore(LocalDateTime.now()))  {
+                   return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "Link expired."));
+
+                }
+
+
+                String old_mail = t.getCurrent_email();
+                String new_mail = t.getNew_email();
+
+
+                UserRecord userRecord = FirebaseAuth.getInstance().
+                        getUserByEmail(old_mail);
+
+                String cus_id = userRecord.getCustomClaims().get("customerid").toString();
+
+
+                Customer resource = Customer.retrieve(cus_id);
+
+
+                CustomerUpdateParams params =
+                        CustomerUpdateParams.builder().setEmail(new_mail).build();
+                Customer customer = resource.update(params);
+
+                System.out.println("Stripe customer updated  " + customer);
+
+                UserRecord.UpdateRequest request = new UserRecord.UpdateRequest(userRecord.getUid()).setEmail(new_mail);
+
+                UserRecord userRecord_updated = FirebaseAuth.getInstance().updateUser(request);
+
+
+
+                System.out.println("Successfully updated user: " + userRecord_updated);
+
+                tokensService.deleteToken(oobCode);
+
+                return ResponseEntity.ok(Map.of("message", "Email changed successfully"));
+
+
+            }
+             catch (FirebaseAuthException e) {
+                e.printStackTrace();
+                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "Couldn't get a user"));
+            }
+            catch ( StripeException e) {
+                e.printStackTrace();
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "Couldn't update the customer"));
+            }
+            catch (NullPointerException e) {
+                e.printStackTrace();
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "It looks like your code has already been used"));
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Something went wrong.."));
+            }
+
         }
 
         /*
@@ -270,7 +479,7 @@ import com.stripe.param.checkout.SessionCreateParams;
         -----------------------------------------------------------------------------------------------------------------
          */
 
-
+        /*
         // endpoint for cancel-reservation, for production mode,
         // add a stripe webhook and then if refunded success, cancel the reservation.
         @PostMapping("/cancel-reservation")
@@ -300,7 +509,7 @@ import com.stripe.param.checkout.SessionCreateParams;
             }
         }
 
-
+        */
         @GetMapping("/reservations")
         public ResponseEntity<?> getResrevations() {
             GsonBuilder gsonBuilder = new GsonBuilder();

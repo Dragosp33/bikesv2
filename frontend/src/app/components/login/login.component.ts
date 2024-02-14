@@ -54,7 +54,11 @@ import { Router } from '@angular/router';
               class="mb-3 px-2"
             />
             <button type="submit" class="btn btn-primary">Login</button>
-            <hr />
+            <div class="d-flex flex-row align-items-center my-2">
+              <hr style="width: 30%;" />
+              <a [routerLink]="['/resetpassword']"> forgot password </a>
+              <hr style="width: 30%;" />
+            </div>
             <a class="btn btn-dark" [routerLink]="['/signup']">Or Sign up</a>
           </form>
         </div>
